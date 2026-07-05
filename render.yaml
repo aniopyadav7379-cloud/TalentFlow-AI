@@ -1,0 +1,71 @@
+services:
+  - type: web
+    name: talentflow-ai-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    region: oregon
+    buildCommand: "pip install -r requirements.txt"
+    # init_db.py runs every deploy; it only creates missing tables (see the
+    # script's own docstring) so this is safe to run on every start, not
+    # just the first one.
+    startCommand: "python scripts/init_db.py && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+
+      # --- Set these in the Render dashboard, not here (secrets) ---
+      - key: DATABASE_URL
+        sync: false # Aiven PostgreSQL connection string, see the deploy guide
+      - key: QDRANT_URL
+        sync: false # Qdrant Cloud URL, or "local:./storage/qdrant_data" to try the free tier first
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ENKRYPT_API_KEY
+        sync: false
+      - key: ENKRYPT_BASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false # your Vercel URL, e.g. https://talentflow-ai.vercel.app
+
+      # Render can generate this for you — see the deploy guide.
+      - key: JWT_SECRET_KEY
+        generateValue: true
+
+  - type: web
+    name: talentflow-ai-mastra
+    runtime: node
+    rootDir: mastra
+    plan: free
+    region: oregon
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm start"
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.11.0
+      - key: PORT
+        value: 4111
+
+      # --- Set these in the Render dashboard, not here (secrets/URLs) ---
+      - key: BACKEND_BASE_URL
+        sync: false # e.g. https://talentflow-ai-backend.onrender.com/api/v1
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MASTRA_MODEL
+        value: openai/gpt-4o-mini
+      - key: QDRANT_URL
+        sync: false # a REAL Qdrant server/Cloud URL — embedded "local:" mode does not work from Node.js
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: MASTRA_MEMORY_COLLECTION
+        value: mastra_memory
+      - key: CORS_ORIGINS
+        sync: false # your Vercel URL, e.g. https://talentflow-ai.vercel.app

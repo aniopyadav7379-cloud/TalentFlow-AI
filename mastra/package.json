@@ -1,0 +1,26 @@
+{
+  "name": "talentflow-ai-mastra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Mastra orchestration layer for TalentFlow AI — agent, tools, and workflows that call the existing FastAPI backend. Adds no AI logic of its own; the backend remains the execution engine.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mastra/core": "^1.0.0",
+    "@qdrant/js-client-rest": "^1.13.0",
+    "dotenv": "^16.4.7",
+    "hono": "^4.6.16",
+    "@hono/node-server": "^1.13.7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2",
+    "@types/node": "^22.10.5"
+  }
+}

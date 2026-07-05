@@ -1,0 +1,45 @@
+# --- Orchestration ---
+langgraph==1.2.7
+
+# --- Web framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# --- Config & validation ---
+pydantic==2.10.4
+pydantic-settings==2.7.1
+email-validator==2.2.0
+
+# --- Database ---
+sqlalchemy==2.0.36
+alembic==1.14.0
+psycopg2-binary==2.9.10
+
+# --- Vector store ---
+qdrant-client==1.12.1
+
+# --- Auth ---
+python-jose[cryptography]==3.3.0
+bcrypt==5.0.0
+
+# --- LLM / embeddings ---
+openai==1.58.1
+
+# --- Async jobs / cache ---
+celery==5.4.0
+redis==5.2.1
+
+# --- Resume parsing ---
+pdfminer.six==20240706
+
+# --- Utilities ---
+httpx==0.28.1
+tenacity==9.0.0
+structlog==24.4.0
+
+# --- Testing ---
+pytest==8.3.4
+pytest-asyncio==0.25.0
+pytest-cov==6.0.0
+fpdf2==2.8.7

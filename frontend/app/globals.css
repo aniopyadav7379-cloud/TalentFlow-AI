@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/*
+  Design tokens — copied directly from the Vol 3-5 design handoff, not
+  reinvented. Dark UI, indigo/purple accent, glassmorphism-friendly surfaces.
+*/
+@theme {
+  --color-background: #09090b;
+  --color-surface: #18181b;
+  --color-card: #18181b;
+  --color-border: #27272a;
+
+  --color-primary: #4f46e5; /* indigo — jobs/candidates/general accent */
+  --color-primary-hover: #4338ca;
+  --color-accent: #8b5cf6; /* purple — interviews/analytics accent */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  --color-foreground: #fafafa;
+  --color-muted: #71717a;
+  --color-muted-foreground: #a1a1aa;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Visible keyboard focus everywhere — accessibility floor, not optional. */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(24, 24, 27, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 999px;
+  }
+}
