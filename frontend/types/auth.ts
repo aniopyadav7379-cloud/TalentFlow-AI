@@ -9,10 +9,10 @@ export interface User {
 }
 
 export interface RegisterPayload {
+  full_name: string;
   email: string;
   password: string;
-  full_name: string;
-  role?: UserRole;
+  role: "recruiter";
 }
 
 export interface LoginPayload {

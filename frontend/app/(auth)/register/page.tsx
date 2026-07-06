@@ -37,7 +37,10 @@ export default function RegisterPage() {
   async function onSubmit(values: FormValues) {
     setServerError(null);
     try {
-      await registerUser(values);
+     await registerUser({
+  ...values,
+  role: "recruiter",
+});
       router.push("/jobs");
     } catch (err) {
       setServerError(err instanceof ApiError ? err.detail : "Something went wrong. Please try again.");
