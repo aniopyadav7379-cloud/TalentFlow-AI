@@ -9,7 +9,7 @@ import type {
 } from "@/types/application";
 import type { Job, JobCreatePayload, JobUpdatePayload } from "@/types/job";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://talentflow-ai-backend-007t.onrender.com/api/v1";
 
 export class ApiError extends Error {
   status: number;
