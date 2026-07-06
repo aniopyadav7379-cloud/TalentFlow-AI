@@ -46,9 +46,17 @@ class Settings(BaseSettings):
     QDRANT_API_KEY: str | None = None
     QDRANT_TIMEOUT: int = 30
 
-    # Vector size must match the embedding model. text-embedding-3-small = 1536.
-    EMBEDDING_DIM: int = 1536
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    # Vector size must match the embedding model. text-embedding-3-small = 1536,
+    # sentence-transformers/all-MiniLM-L6-v2 (used by the HuggingFace provider) = 384.
+    EMBEDDING_DIM: int = 384
+    EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+
+    # --- Embeddings provider ---
+    # "huggingface": free HuggingFace Inference API (default, no cost).
+    # "openai": paid OpenAI embeddings (requires OPENAI_API_KEY + billing).
+    # "fake": deterministic offline stand-in, used automatically when no keys are set.
+    EMBEDDING_PROVIDER: Literal["huggingface", "openai", "fake"] = "huggingface"
+    HUGGINGFACE_API_KEY: str | None = None
 
     # --- LLM / OpenAI ---
     OPENAI_API_KEY: str | None = None

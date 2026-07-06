@@ -63,6 +63,69 @@ class OpenAIEmbeddingClient(EmbeddingClient):
         return [item.embedding for item in response.data]
 
 
+class HuggingFaceEmbeddingClient(EmbeddingClient):
+    """
+    Free embedding client using the HuggingFace Inference API's
+    feature-extraction pipeline. No local model download, no GPU/heavy
+    dependencies (just an HTTP call), which keeps it light enough to run on
+    free-tier hosting like Render.
+
+    Default model: sentence-transformers/all-MiniLM-L6-v2 (384-dim).
+    """
+
+    def __init__(self, api_key: str | None = None, model: str | None = None):
+        settings = get_settings()
+        key = api_key or settings.HUGGINGFACE_API_KEY
+        if not key:
+            raise EmbeddingError(
+                "HUGGINGFACE_API_KEY is not set. Get a free token at "
+                "https://huggingface.co/settings/tokens, or use FakeEmbeddingClient for local dev/tests."
+            )
+        self.model = model or settings.EMBEDDING_MODEL
+        self._url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{self.model}"
+        self._headers = {"Authorization": f"Bearer {key}"}
+
+    @retry(
+        reraise=True,
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=8),
+        retry=retry_if_exception_type(Exception),
+    )
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        cleaned = [t if t.strip() else " " for t in texts]
+        import httpx
+
+        try:
+            response = httpx.post(
+                self._url,
+                headers=self._headers,
+                json={"inputs": cleaned, "options": {"wait_for_model": True}},
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except Exception as exc:
+            raise EmbeddingError(f"HuggingFace embedding request failed: {exc}") from exc
+
+        # feature-extraction returns one vector per input (already mean-pooled)
+        # for sentence-transformers models, or a token-level matrix per input
+        # for plain transformer models — handle both by mean-pooling here.
+        vectors: list[list[float]] = []
+        for item in data:
+            if isinstance(item[0], list):
+                dim = len(item[0])
+                summed = [0.0] * dim
+                for token_vec in item:
+                    for i, v in enumerate(token_vec):
+                        summed[i] += v
+                vectors.append([v / len(item) for v in summed])
+            else:
+                vectors.append(item)
+        return vectors
+
+
 class FakeEmbeddingClient(EmbeddingClient):
     """
     Deterministic, offline embedding stand-in for tests and local dev without
@@ -116,8 +179,24 @@ class FakeEmbeddingClient(EmbeddingClient):
 
 
 def get_embedding_client() -> EmbeddingClient:
-    """Factory: real OpenAI client if a key is configured, fake client otherwise (local dev without keys)."""
+    """
+    Factory: picks the embedding backend based on settings.EMBEDDING_PROVIDER.
+
+    - "huggingface" (default): free HuggingFace Inference API. Falls back to
+      the fake client if no HUGGINGFACE_API_KEY is set (e.g. local dev).
+    - "openai": paid OpenAI embeddings. Falls back to fake if no key is set.
+    - "fake": always the deterministic offline stand-in.
+    """
     settings = get_settings()
-    if settings.OPENAI_API_KEY:
-        return OpenAIEmbeddingClient()
+
+    if settings.EMBEDDING_PROVIDER == "openai":
+        if settings.OPENAI_API_KEY:
+            return OpenAIEmbeddingClient()
+        return FakeEmbeddingClient(dim=settings.EMBEDDING_DIM)
+
+    if settings.EMBEDDING_PROVIDER == "huggingface":
+        if settings.HUGGINGFACE_API_KEY:
+            return HuggingFaceEmbeddingClient()
+        return FakeEmbeddingClient(dim=settings.EMBEDDING_DIM)
+
     return FakeEmbeddingClient(dim=settings.EMBEDDING_DIM)
