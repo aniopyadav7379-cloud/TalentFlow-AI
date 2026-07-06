@@ -79,13 +79,22 @@ async function embedText(text: string): Promise<number[]> {
   // feature-extraction returns either a flat vector (already pooled) or a
   // token-level matrix, depending on the model — mean-pool if it's a matrix.
   if (Array.isArray(data[0])) {
-    const matrix = data as number[][];
-    const dim = matrix[0].length;
-    const summed = new Array(dim).fill(0);
-    for (const tokenVec of matrix) {
-      for (let i = 0; i < dim; i++) summed[i] += tokenVec[i];
-    }
-    return summed.map((v) => v / matrix.length);
+   const matrix = data as number[][];
+
+if (matrix.length === 0 || !matrix[0]) {
+  throw new Error("HuggingFace returned an empty embedding.");
+}
+
+const dim = matrix[0].length;
+const summed = new Array(dim).fill(0);
+
+for (const tokenVec of matrix) {
+  for (let i = 0; i < dim; i++) {
+    summed[i] += tokenVec[i] ?? 0;
+  }
+}
+
+return summed.map((v) => v / matrix.length);
   }
   return data as number[];
 }
