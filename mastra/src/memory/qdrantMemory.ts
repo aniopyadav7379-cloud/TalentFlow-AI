@@ -31,7 +31,8 @@ export interface MemoryMatch {
   createdAt: string;
 }
 
-const EMBEDDING_DIM = 1536; // text-embedding-3-small — matches the backend's default so both stay comparable if ever unified.
+const EMBEDDING_DIM = 384; // sentence-transformers/all-MiniLM-L6-v2 via the free HuggingFace Inference API.
+const EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2";
 
 let collectionEnsured = false;
 
@@ -52,29 +53,41 @@ async function ensureCollection(client: QdrantClient): Promise<void> {
 }
 
 async function embedText(text: string): Promise<number[]> {
-  if (!config.openaiApiKey) {
+  if (!config.huggingfaceApiKey) {
     throw new Error(
-      "OPENAI_API_KEY is not set — required to embed text for Mastra's memory. " +
-        "Set it in mastra/.env, or skip memory calls in the workflow."
+      "HUGGINGFACE_API_KEY is not set — required to embed text for Mastra's memory. " +
+        "Get a free token at https://huggingface.co/settings/tokens and set it in mastra/.env, " +
+        "or skip memory calls in the workflow."
     );
   }
-  const response = await fetch("https://api.openai.com/v1/embeddings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.openaiApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model: "text-embedding-3-small", input: text }),
-  });
+  const response = await fetch(
+    `https://router.huggingface.co/hf-inference/models/${EMBEDDING_MODEL}/pipeline/feature-extraction`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.huggingfaceApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ inputs: text, options: { wait_for_model: true } }),
+    }
+  );
   if (!response.ok) {
-    throw new Error(`OpenAI embedding request failed: ${response.status} ${await response.text()}`);
+    throw new Error(`HuggingFace embedding request failed: ${response.status} ${await response.text()}`);
   }
-  const body = (await response.json()) as { data: Array<{ embedding: number[] }> };
-  const embedding = body.data[0]?.embedding;
-  if (!embedding) {
-    throw new Error("OpenAI embedding response contained no embedding vector");
+  const data = (await response.json()) as number[] | number[][];
+
+  // feature-extraction returns either a flat vector (already pooled) or a
+  // token-level matrix, depending on the model — mean-pool if it's a matrix.
+  if (Array.isArray(data[0])) {
+    const matrix = data as number[][];
+    const dim = matrix[0].length;
+    const summed = new Array(dim).fill(0);
+    for (const tokenVec of matrix) {
+      for (let i = 0; i < dim; i++) summed[i] += tokenVec[i];
+    }
+    return summed.map((v) => v / matrix.length);
   }
-  return embedding;
+  return data as number[];
 }
 
 function toPointId(recruiterId: string, type: MemoryType, text: string): string {

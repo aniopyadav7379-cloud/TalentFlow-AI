@@ -12,6 +12,7 @@ export const config = {
   backendBaseUrl: required("BACKEND_BASE_URL", "http://localhost:8000/api/v1"),
   model: required("MASTRA_MODEL", "openai/gpt-4o-mini"),
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
+  huggingfaceApiKey: process.env.HUGGINGFACE_API_KEY ?? "",
   qdrantUrl: required("QDRANT_URL", "http://localhost:6333"),
   qdrantApiKey: process.env.QDRANT_API_KEY ?? undefined,
   memoryCollection: required("MASTRA_MEMORY_COLLECTION", "mastra_memory"),
