@@ -82,7 +82,7 @@ class HuggingFaceEmbeddingClient(EmbeddingClient):
                 "https://huggingface.co/settings/tokens, or use FakeEmbeddingClient for local dev/tests."
             )
         self.model = model or settings.EMBEDDING_MODEL
-        self._url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{self.model}"
+        self._url = f"https://router.huggingface.co/hf-inference/models/{self.model}/pipeline/feature-extraction"
         self._headers = {"Authorization": f"Bearer {key}"}
 
     @retry(
