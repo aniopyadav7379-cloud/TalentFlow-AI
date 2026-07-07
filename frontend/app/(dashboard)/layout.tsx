@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { AnimatedBackground } from "@/components/layout/animated-background";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Spinner } from "@/components/ui/feedback";
 import { useAuth } from "@/providers/auth-provider";
@@ -27,6 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen bg-background">
+      <AnimatedBackground />
       <Sidebar />
       <main className="flex-1 overflow-y-auto scrollbar-thin px-8 py-6">{children}</main>
     </div>
