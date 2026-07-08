@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState, ErrorAlert, Spinner } from "@/components/ui/feedback";
 import { useCandidates } from "@/hooks/use-candidates";
 import { useResumes } from "@/hooks/use-resumes";
+import { resumesApi } from "@/lib/api-client";
 
 export default function ResumeLibraryPage() {
   const { data: resumes, isLoading, isError } = useResumes();
@@ -63,7 +64,7 @@ export default function ResumeLibraryPage() {
                       </Link>
                     </td>
                     <td className="px-5 py-3">
-                      <a href={resume.file_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                      <a href={resumesApi.fileUrl(resume.id)} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                         View file
                       </a>
                     </td>

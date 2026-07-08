@@ -183,6 +183,10 @@ export const resumesApi = {
     const qs = query.toString();
     return request<Resume[]>(`/resumes${qs ? `?${qs}` : ""}`);
   },
+
+  // Resume.file_url is an internal storage identifier (e.g. "local://..."),
+  // not something a browser can open — this builds the real, clickable link.
+  fileUrl: (resumeId: string) => `${BASE_URL}/resumes/${resumeId}/file`,
 };
 
 // ---------------------------------------------------------------------- //

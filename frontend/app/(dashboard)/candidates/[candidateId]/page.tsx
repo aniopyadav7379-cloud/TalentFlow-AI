@@ -11,7 +11,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorAlert, Spinner } from "@/components/ui/feedback";
 import { useCandidateDetail } from "@/hooks/use-candidate-detail";
 import { useDeleteCandidate } from "@/hooks/use-candidates";
-import { ApiError } from "@/lib/api-client";
+import { ApiError, resumesApi } from "@/lib/api-client";
 
 const applicationStatusVariant: Record<string, "success" | "warning" | "default" | "accent" | "error"> = {
   submitted: "default",
@@ -99,7 +99,7 @@ export default function CandidateDetailPage() {
               <div key={resume.id} className="rounded-lg border border-border p-4">
                 <div className="mb-2 flex items-center justify-between">
                   <a
-                    href={resume.file_url}
+                    href={resumesApi.fileUrl(resume.id)}
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
