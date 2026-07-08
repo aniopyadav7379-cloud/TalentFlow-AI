@@ -3,6 +3,7 @@ import type { LoginPayload, RegisterPayload, TokenResponse, User } from "@/types
 import type { Candidate, CandidateCreatePayload, Resume } from "@/types/candidate";
 import type {
   Application,
+  Evaluation,
   Interview,
   InterviewResponsePayload,
   ShortlistEntry,
@@ -110,10 +111,20 @@ export const jobsApi = {
 // ---------------------------------------------------------------------- //
 
 export const candidatesApi = {
+  list: (params?: { skip?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    const qs = query.toString();
+    return request<Candidate[]>(`/candidates${qs ? `?${qs}` : ""}`);
+  },
+
   create: (payload: CandidateCreatePayload) =>
     request<Candidate>("/candidates", { method: "POST", body: JSON.stringify(payload) }),
 
   get: (candidateId: string) => request<Candidate>(`/candidates/${candidateId}`),
+
+  delete: (candidateId: string) => request<void>(`/candidates/${candidateId}`, { method: "DELETE" }),
 
   uploadResume: (candidateId: string, file: File) => {
     const formData = new FormData();
@@ -127,6 +138,14 @@ export const candidatesApi = {
 // ---------------------------------------------------------------------- //
 
 export const applicationsApi = {
+  list: (params?: { skip?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    const qs = query.toString();
+    return request<Application[]>(`/applications${qs ? `?${qs}` : ""}`);
+  },
+
   get: (applicationId: string) => request<Application>(`/applications/${applicationId}`),
 
   getInterview: (applicationId: string) => request<Interview>(`/applications/${applicationId}/interview`),
@@ -136,4 +155,60 @@ export const applicationsApi = {
       method: "POST",
       body: JSON.stringify({ responses }),
     }),
+};
+
+// ---------------------------------------------------------------------- //
+// Interviews (dashboard-wide list)
+// ---------------------------------------------------------------------- //
+
+export const interviewsApi = {
+  list: (params?: { skip?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    const qs = query.toString();
+    return request<Interview[]>(`/interviews${qs ? `?${qs}` : ""}`);
+  },
+};
+
+// ---------------------------------------------------------------------- //
+// Resumes (dashboard-wide list)
+// ---------------------------------------------------------------------- //
+
+export const resumesApi = {
+  list: (params?: { skip?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    const qs = query.toString();
+    return request<Resume[]>(`/resumes${qs ? `?${qs}` : ""}`);
+  },
+};
+
+// ---------------------------------------------------------------------- //
+// Evaluations (Enkrypt guardrail results)
+// ---------------------------------------------------------------------- //
+
+export const evaluationsApi = {
+  list: (params?: { skip?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    const qs = query.toString();
+    return request<Evaluation[]>(`/evaluations${qs ? `?${qs}` : ""}`);
+  },
+};
+
+// ---------------------------------------------------------------------- //
+// Users (admin only)
+// ---------------------------------------------------------------------- //
+
+export const usersApi = {
+  list: (params?: { skip?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.skip) query.set("skip", String(params.skip));
+    if (params?.limit) query.set("limit", String(params.limit));
+    const qs = query.toString();
+    return request<User[]>(`/users${qs ? `?${qs}` : ""}`);
+  },
 };
