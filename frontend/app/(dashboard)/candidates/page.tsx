@@ -1,187 +1,128 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, FileText, UploadCloud } from "lucide-react";
-import { useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { Plus, Trash2, UserRound } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ErrorAlert } from "@/components/ui/feedback";
-import { Input, Label } from "@/components/ui/input";
-import { useCreateCandidate, useUploadResume } from "@/hooks/use-candidates";
+import { EmptyState, ErrorAlert, Spinner } from "@/components/ui/feedback";
+import { useCandidates, useDeleteCandidate } from "@/hooks/use-candidates";
 import { ApiError } from "@/lib/api-client";
-import type { Candidate } from "@/types/candidate";
-import type { Resume } from "@/types/candidate";
 
-const schema = z.object({
-  full_name: z.string().min(2, "Enter the candidate's full name"),
-  email: z.string().email("Enter a valid email address"),
-  phone: z.string().optional(),
-});
+export default function CandidatesPage() {
+  const { data: candidates, isLoading, isError } = useCandidates();
+  const deleteCandidate = useDeleteCandidate();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
-type FormValues = z.infer<typeof schema>;
-
-export default function AddCandidatePage() {
-  const createCandidate = useCreateCandidate();
-  const uploadResume = useUploadResume();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [candidate, setCandidate] = useState<Candidate | null>(null);
-  const [resume, setResume] = useState<Resume | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
-
-  async function onSubmit(values: FormValues) {
-    setError(null);
+  async function handleDelete(candidateId: string, name: string) {
+    if (!window.confirm(`Delete ${name}? This also removes their resumes and applications.`)) return;
+    setDeleteError(null);
+    setPendingId(candidateId);
     try {
-      const created = await createCandidate.mutateAsync(values);
-      setCandidate(created);
+      await deleteCandidate.mutateAsync(candidateId);
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Couldn't create the candidate. Please try again.");
-    }
-  }
-
-  async function handleFile(file: File) {
-    if (!candidate) return;
-    if (file.type !== "application/pdf") {
-      setError("Only PDF resumes are accepted.");
-      return;
-    }
-    setError(null);
-    try {
-      const uploaded = await uploadResume.mutateAsync({ candidateId: candidate.id, file });
-      setResume(uploaded);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Couldn't upload the resume. Please try again.");
+      setDeleteError(err instanceof ApiError ? err.detail : "Couldn't delete this candidate. Please try again.");
+    } finally {
+      setPendingId(null);
     }
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="mb-1 text-xl font-semibold text-foreground">Add Candidate</h1>
-      <p className="mb-6 text-sm text-muted-foreground">
-        Add a candidate, then upload their resume — it&apos;s parsed and embedded immediately.
-      </p>
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">Candidates</h1>
+          <p className="text-sm text-muted-foreground">Everyone who has been added to TalentFlow AI.</p>
+        </div>
+        <Link href="/candidates/add">
+          <Button>
+            <Plus className="h-4 w-4" />
+            Add Candidate
+          </Button>
+        </Link>
+      </div>
 
-      {error && (
+      {deleteError && (
         <div className="mb-4">
-          <ErrorAlert message={error} />
+          <ErrorAlert message={deleteError} />
         </div>
       )}
 
-      {!candidate && (
-        <Card>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Label htmlFor="full_name">Full name</Label>
-              <Input id="full_name" placeholder="Asha Kumar" error={errors.full_name?.message} {...register("full_name")} />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="asha@example.com" error={errors.email?.message} {...register("email")} />
-            </div>
-            <div>
-              <Label htmlFor="phone">Phone (optional)</Label>
-              <Input id="phone" placeholder="+91 98765 43210" {...register("phone")} />
-            </div>
-            <Button type="submit" className="w-full" isLoading={isSubmitting}>
-              Continue to resume upload
-            </Button>
-          </form>
-        </Card>
+      {isLoading && (
+        <div className="flex justify-center py-16">
+          <Spinner />
+        </div>
       )}
 
-      {candidate && !resume && (
-        <Card>
-          <div className="mb-4 flex items-center gap-3 rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
-            <CheckCircle2 className="h-4 w-4" />
-            {candidate.full_name} added
-          </div>
+      {isError && <ErrorAlert message="Couldn't load candidates. Check that the backend is running." />}
 
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDragging(false);
-              const file = e.dataTransfer.files?.[0];
-              if (file) handleFile(file);
-            }}
-            onClick={() => fileInputRef.current?.click()}
-            className={`flex cursor-pointer flex-col items-center justify-center rounded-[24px] border-2 border-dashed px-6 py-12 text-center transition-colors ${
-              isDragging ? "border-primary bg-primary/5" : "border-border bg-surface hover:border-primary/50"
-            }`}
-          >
-            <UploadCloud className={`mb-3 h-8 w-8 ${isDragging ? "text-primary" : "text-muted"}`} />
-            <p className="text-sm font-medium text-foreground">
-              {uploadResume.isPending ? "Uploading…" : "Drop resume here or click to browse"}
-            </p>
-            <p className="mt-1 text-xs text-muted">PDF only, up to 10MB</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/pdf"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFile(file);
-              }}
-            />
-          </div>
-        </Card>
+      {candidates && candidates.length === 0 && (
+        <EmptyState
+          icon={<UserRound className="h-6 w-6" />}
+          title="No candidates yet"
+          description="Add your first candidate to start matching them against jobs."
+          action={
+            <Link href="/candidates/add">
+              <Button size="sm">Add Candidate</Button>
+            </Link>
+          }
+        />
       )}
 
-      {candidate && resume && (
-        <Card>
-          <div className="mb-4 flex items-center gap-3 rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
-            <CheckCircle2 className="h-4 w-4" />
-            Resume uploaded and parsed
+      {candidates && candidates.length > 0 && (
+        <Card className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
+                  <th className="px-5 py-3 font-medium">Name</th>
+                  <th className="px-5 py-3 font-medium">Email</th>
+                  <th className="px-5 py-3 font-medium">Phone</th>
+                  <th className="px-5 py-3 font-medium">Added</th>
+                  <th className="px-5 py-3 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {candidates.map((candidate) => (
+                  <tr key={candidate.id} className="border-b border-border/60 last:border-0">
+                    <td className="px-5 py-3">
+                      <Link
+                        href={`/candidates/${candidate.id}`}
+                        className="font-medium text-foreground hover:text-primary"
+                      >
+                        {candidate.full_name}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3 text-muted-foreground">{candidate.email}</td>
+                    <td className="px-5 py-3 text-muted-foreground">{candidate.phone ?? "—"}</td>
+                    <td className="px-5 py-3 text-muted-foreground">
+                      {new Date(candidate.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/candidates/${candidate.id}`}>
+                          <Button variant="ghost" size="sm">
+                            View
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          isLoading={pendingId === candidate.id}
+                          onClick={() => handleDelete(candidate.id, candidate.full_name)}
+                          className="text-error hover:text-error"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <FileText className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">{candidate.full_name}</p>
-              <p className="text-xs text-muted-foreground">
-                {resume.parsed_experience_years ? `${resume.parsed_experience_years} years experience` : "Experience not detected"}
-              </p>
-            </div>
-          </div>
-
-          {resume.parsed_skills.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {resume.parsed_skills.map((skill) => (
-                <Badge key={skill} variant="accent">
-                  {skill}
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          <Button
-            variant="secondary"
-            className="mt-6 w-full"
-            onClick={() => {
-              setCandidate(null);
-              setResume(null);
-            }}
-          >
-            Add another candidate
-          </Button>
         </Card>
       )}
     </div>

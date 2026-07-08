@@ -1,6 +1,15 @@
 "use client";
 
-import { Briefcase, LayoutDashboard, LogOut, Users } from "lucide-react";
+import {
+  Briefcase,
+  FileText,
+  FolderKanban,
+  LayoutDashboard,
+  LogOut,
+  Mic,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -11,7 +20,13 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/candidates", label: "Candidates", icon: Users },
+  { href: "/applications", label: "Applications", icon: FolderKanban },
+  { href: "/interviews", label: "Interviews", icon: Mic },
+  { href: "/resumes", label: "Resume Library", icon: FileText },
+  { href: "/evaluations", label: "AI Evaluations", icon: ShieldCheck },
 ];
+
+const adminOnlyItems = [{ href: "/users", label: "Users", icon: Users }];
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -26,8 +41,9 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1">
-        {navItems.map((item) => {
-          const isActive = pathname?.startsWith(item.href);
+        {[...navItems, ...(user?.role === "admin" ? adminOnlyItems : [])].map((item) => {
+          const isActive =
+            item.href === "/dashboard" ? pathname === "/dashboard" : pathname?.startsWith(item.href);
           const Icon = item.icon;
           return (
             <Link
