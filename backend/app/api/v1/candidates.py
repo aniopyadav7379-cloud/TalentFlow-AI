@@ -32,12 +32,33 @@ def create_candidate(
     return candidate
 
 
+@router.get("", response_model=list[CandidateOut])
+def list_candidates(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[Candidate]:
+    return db.query(Candidate).order_by(Candidate.created_at.desc()).offset(skip).limit(limit).all()
+
+
 @router.get("/{candidate_id}", response_model=CandidateOut)
 def get_candidate(candidate_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Candidate:
     candidate = db.get(Candidate, candidate_id)
     if candidate is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found")
     return candidate
+
+
+@router.delete("/{candidate_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_candidate(
+    candidate_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> None:
+    candidate = db.get(Candidate, candidate_id)
+    if candidate is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found")
+    db.delete(candidate)  # cascades to resumes + applications via the model's relationship config
+    db.commit()
 
 
 @router.post("/{candidate_id}/resume", response_model=ResumeOut, status_code=status.HTTP_201_CREATED)

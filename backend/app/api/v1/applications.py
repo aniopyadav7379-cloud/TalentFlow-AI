@@ -49,6 +49,16 @@ def run_shortlist(
     return final_state["shortlist"]
 
 
+@router.get("/applications", response_model=list[ApplicationOut])
+def list_all_applications(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[Application]:
+    return db.query(Application).order_by(Application.created_at.desc()).offset(skip).limit(limit).all()
+
+
 @router.get("/jobs/{job_id}/applications", response_model=list[ApplicationOut])
 def list_applications_for_job(
     job_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)

@@ -12,6 +12,21 @@ from app.services.llm_client import LLMClient
 
 router = APIRouter(prefix="/applications/{application_id}/interview", tags=["interviews"])
 
+# Separate top-level router (no application_id in the path) purely for the
+# "list every interview" dashboard view. Registered alongside `router` in
+# app/api/v1/router.py.
+list_router = APIRouter(prefix="/interviews", tags=["interviews"])
+
+
+@list_router.get("", response_model=list[InterviewOut])
+def list_all_interviews(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[Interview]:
+    return db.query(Interview).order_by(Interview.created_at.desc()).offset(skip).limit(limit).all()
+
 
 class SubmitResponsesRequest(BaseModel):
     responses: list[dict] = Field(
