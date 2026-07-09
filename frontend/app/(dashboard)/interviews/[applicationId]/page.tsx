@@ -63,7 +63,7 @@ export default function InterviewResponsePage() {
         interview.questions.map((q) => ({
           question_id: q.id,
           question: q.question,
-          answer: answers[q.id],
+          answer: answers[q.id] ?? "",
         }))
       );
     } catch (err) {
