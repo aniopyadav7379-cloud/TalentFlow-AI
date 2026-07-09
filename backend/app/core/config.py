@@ -58,9 +58,13 @@ class Settings(BaseSettings):
     EMBEDDING_PROVIDER: Literal["huggingface", "openai", "fake"] = "huggingface"
     HUGGINGFACE_API_KEY: str | None = None
 
-    # --- LLM / OpenAI ---
+    # --- LLM ---
+    # Free-tier: get a key at https://console.groq.com/keys — used automatically
+    # if set (see services/llm_client.py's get_llm_client() factory). Falls back
+    # to OPENAI_API_KEY below only if GROQ_API_KEY is absent.
+    GROQ_API_KEY: str | None = None
     OPENAI_API_KEY: str | None = None
-    LLM_MODEL: str = "gpt-4o-mini"
+    LLM_MODEL: str = "llama-3.3-70b-versatile"
 
     # --- Enkrypt AI (fairness / bias / grounding guardrails) ---
     ENKRYPT_API_KEY: str | None = None

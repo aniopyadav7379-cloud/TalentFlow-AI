@@ -67,6 +67,53 @@ class OpenAILLMClient(LLMClient):
             raise LLMError(f"Model did not return valid JSON: {exc}. Raw content: {content!r}") from exc
 
 
+class GroqLLMClient(LLMClient):
+    """
+    Free-tier LLM client using Groq's OpenAI-compatible API. Reuses the
+    `openai` SDK pointed at Groq's endpoint — no extra dependency needed,
+    same request/response shape as OpenAILLMClient.
+    """
+
+    def __init__(self, api_key: str | None = None, model: str | None = None):
+        settings = get_settings()
+        key = api_key or settings.GROQ_API_KEY
+        if not key:
+            raise LLMError(
+                "GROQ_API_KEY is not set. Get a free key at https://console.groq.com/keys, "
+                "or use FakeLLMClient for local dev/tests."
+            )
+        from openai import OpenAI
+
+        self._client = OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1")
+        self.model = model or settings.LLM_MODEL
+
+    @retry(
+        reraise=True,
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=8),
+        retry=retry_if_exception_type(Exception),
+    )
+    def complete_json(self, system_prompt: str, user_prompt: str) -> dict:
+        try:
+            response = self._client.chat.completions.create(
+                model=self.model,
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.2,
+            )
+            content = response.choices[0].message.content
+        except Exception as exc:
+            raise LLMError(f"Groq chat completion failed: {exc}") from exc
+
+        try:
+            return json.loads(content)
+        except (json.JSONDecodeError, TypeError) as exc:
+            raise LLMError(f"Model did not return valid JSON: {exc}. Raw content: {content!r}") from exc
+
+
 class FakeLLMClient(LLMClient):
     """
     Deterministic, offline LLM stand-in for tests.
@@ -103,11 +150,18 @@ class FakeLLMClient(LLMClient):
 
 
 def get_llm_client() -> LLMClient:
-    """Factory: real OpenAI client if a key is configured, otherwise raises — agents must be given a FakeLLMClient explicitly in tests/dev without keys."""
+    """
+    Factory: prefers the free Groq client if GROQ_API_KEY is set (matches
+    the embeddings.py free-tier pattern), falls back to OpenAI if only
+    OPENAI_API_KEY is set, otherwise raises — agents must be given a
+    FakeLLMClient explicitly in tests/dev without keys.
+    """
     settings = get_settings()
+    if settings.GROQ_API_KEY:
+        return GroqLLMClient()
     if settings.OPENAI_API_KEY:
         return OpenAILLMClient()
     raise LLMError(
-        "No OPENAI_API_KEY configured and no explicit LLMClient was provided. "
+        "No GROQ_API_KEY or OPENAI_API_KEY configured and no explicit LLMClient was provided. "
         "Pass a FakeLLMClient explicitly for local development without an API key."
     )
