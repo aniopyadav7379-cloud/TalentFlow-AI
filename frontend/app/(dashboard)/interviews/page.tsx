@@ -63,6 +63,7 @@ export default function InterviewsPage() {
                   <th className="px-5 py-3 font-medium">Score</th>
                   <th className="px-5 py-3 font-medium">Status</th>
                   <th className="px-5 py-3 font-medium">Created</th>
+                  <th className="px-5 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -99,6 +100,14 @@ export default function InterviewsPage() {
                       </td>
                       <td className="px-5 py-3 text-muted-foreground">
                         {new Date(interview.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <Link
+                          href={`/interviews/${interview.application_id}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {interview.overall_score !== null ? "View Evaluation" : "Record Responses"}
+                        </Link>
                       </td>
                     </tr>
                   );

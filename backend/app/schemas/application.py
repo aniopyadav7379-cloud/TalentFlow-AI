@@ -51,6 +51,16 @@ class InterviewCreate(BaseModel):
     scheduled_at: datetime | None = None
 
 
+class InterviewResponseOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    question: str
+    answer: str | None
+    score: float | None
+    feedback: str | None
+
+
 class InterviewOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -62,6 +72,7 @@ class InterviewOut(BaseModel):
     score_breakdown: dict
     ai_recommendation: str | None
     created_at: datetime
+    responses: list[InterviewResponseOut] = []
 
 
 class InterviewResponseIn(BaseModel):

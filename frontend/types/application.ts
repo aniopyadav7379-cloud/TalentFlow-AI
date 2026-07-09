@@ -48,6 +48,14 @@ export interface ScoreBreakdown {
   leadership: number;
 }
 
+export interface InterviewResponseRecord {
+  id: string;
+  question: string;
+  answer: string | null;
+  score: number | null;
+  feedback: string | null;
+}
+
 export interface Interview {
   id: string;
   application_id: string;
@@ -57,6 +65,7 @@ export interface Interview {
   score_breakdown: ScoreBreakdown | Record<string, never>;
   ai_recommendation: string | null;
   created_at: string;
+  responses: InterviewResponseRecord[];
 }
 
 export interface InterviewResponsePayload {
