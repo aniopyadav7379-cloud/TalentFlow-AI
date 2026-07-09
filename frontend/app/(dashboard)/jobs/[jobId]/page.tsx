@@ -12,15 +12,33 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState, ErrorAlert, Spinner } from "@/components/ui/feedback";
-import { useJob, useRunShortlist } from "@/hooks/use-jobs";
+import { useJob, useRunShortlist, useUpdateJob } from "@/hooks/use-jobs";
 import { ApiError } from "@/lib/api-client";
+import type { JobStatus } from "@/types/job";
+
+// Which status changes make sense from each current status. Keeps the
+// button row short and avoids nonsensical jumps like open -> draft.
+const NEXT_STATUSES: Record<JobStatus, { label: string; value: JobStatus }[]> = {
+  draft: [{ label: "Publish (Open)", value: "open" }],
+  open: [
+    { label: "Close", value: "closed" },
+    { label: "Archive", value: "archived" },
+  ],
+  closed: [
+    { label: "Reopen", value: "open" },
+    { label: "Archive", value: "archived" },
+  ],
+  archived: [{ label: "Reopen", value: "open" }],
+};
 
 export default function JobDetailPage() {
   const params = useParams<{ jobId: string }>();
   const jobId = params.jobId;
   const { data: job, isLoading, isError } = useJob(jobId);
   const runShortlist = useRunShortlist(jobId);
+  const updateStatus = useUpdateJob(jobId);
   const [shortlistError, setShortlistError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   async function handleRunShortlist() {
     setShortlistError(null);
@@ -30,6 +48,15 @@ export default function JobDetailPage() {
       setShortlistError(
         err instanceof ApiError ? err.detail : "Couldn't run the shortlist pipeline. Please try again."
       );
+    }
+  }
+
+  async function handleStatusChange(next: JobStatus) {
+    setStatusError(null);
+    try {
+      await updateStatus.mutateAsync({ status: next });
+    } catch (err) {
+      setStatusError(err instanceof ApiError ? err.detail : "Couldn't update job status. Please try again.");
     }
   }
 
@@ -65,11 +92,30 @@ export default function JobDetailPage() {
             {[job.department, job.location, job.employment_type].filter(Boolean).join(" · ")}
           </p>
         </div>
-        <Button onClick={handleRunShortlist} isLoading={runShortlist.isPending}>
-          <Sparkles className="h-4 w-4" />
-          Run AI Shortlist
-        </Button>
+        <div className="flex items-center gap-2">
+          {NEXT_STATUSES[job.status].map((opt) => (
+            <Button
+              key={opt.value}
+              variant="secondary"
+              size="sm"
+              isLoading={updateStatus.isPending && updateStatus.variables?.status === opt.value}
+              onClick={() => handleStatusChange(opt.value)}
+            >
+              {opt.label}
+            </Button>
+          ))}
+          <Button onClick={handleRunShortlist} isLoading={runShortlist.isPending}>
+            <Sparkles className="h-4 w-4" />
+            Run AI Shortlist
+          </Button>
+        </div>
       </div>
+
+      {statusError && (
+        <div className="mb-4">
+          <ErrorAlert message={statusError} />
+        </div>
+      )}
 
       {job.skills.length > 0 && (
         <div className="mb-6 flex flex-wrap gap-1.5">
